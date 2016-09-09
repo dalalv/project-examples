@@ -27,10 +27,13 @@ import java.util.List;
 public class CreateAndDeploy {
     public static void main(String[] args) throws IOException, NoSuchAlgorithmException {
 
-        String buildName = "build-test";
-        String buildNumber = "2";
-        String artifactoryURL = "http://localhost:8081/artifactory";
-        String targetRepository = "libs-release-local";   //optional. Only used when deploying the actual artifacts (in addition to the build info).
+        String buildName = System.getenv("BuildName");
+        String buildNumber = System.getenv("BuildNumber");
+        String artifactoryURL = System.getenv("ArtifactoryURL");
+        String targetRepository = System.getenv("TargetRepo"); //optional. Only used when deploying the actual artifacts (in addition to the build info).
+        String artifactoryUser = System.getenv("ArtifactoryUser");
+        String artifactoryPasswd = System.getenv("ArtifactoryPasswd");
+
         File artifactsDirectory = new File(args[0]); //directory location is passed by argument
 
         if (!artifactsDirectory.isDirectory()){
