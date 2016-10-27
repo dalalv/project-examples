@@ -27,12 +27,27 @@ import java.util.List;
 public class CreateAndDeploy {
     public static void main(String[] args) throws IOException, NoSuchAlgorithmException {
 
-        String buildName = System.getenv("BuildName");
-        String buildNumber = System.getenv("BuildNumber");
-        String artifactoryURL = System.getenv("ArtifactoryURL");
-        String targetRepository = System.getenv("TargetRepo"); //optional. Only used when deploying the actual artifacts (in addition to the build info).
-        String artifactoryUser = System.getenv("ArtifactoryUser");
-        String artifactoryPasswd = System.getenv("ArtifactoryPasswd");
+        /** String buildName = System.getenv("buildName");
+         * String buildName = SetRequiredVars(System.getenv("buildName"));
+         * String buildNumber = System.getenv("buildNumber");
+         * String artifactoryURL = System.getenv("artifactoryURL");
+         * String targetRepository = System.getenv("targetRepo"); //optional. Only used when deploying the actual artifacts (in addition to the build info).
+         * String artifactoryUser = System.getenv("artifactoryUser");
+         * String artifactoryPasswd = System.getenv("artifactoryPasswd");
+         * String agentCItool = System.getenv("buildTool");
+         * String moduleCIjob = System.getenv("buildJobName");
+         * String buildURL = System.getenv("buildJobUrl");
+         */
+        String buildName = SetRequiredVars(System.getenv("buildName"),"buildName");
+        String buildNumber = SetRequiredVars(System.getenv("buildNumber"),"buildNumber");
+        String artifactoryURL = SetRequiredVars(System.getenv("artifactoryURL"),"artifactoryURL");
+        String targetRepository = SetRequiredVars(System.getenv("targetRepo"),"targetRepo"); //optional. Only used when deploying the actual artifacts (in addition to the build info).
+        String artifactoryUser = SetRequiredVars(System.getenv("artifactoryUser"),"artifactoryUser");
+        String artifactoryPasswd = SetRequiredVars(System.getenv("artifactoryPasswd"),"artifactoryPasswd");
+        String agentCItool = SetRequiredVars(System.getenv("buildTool"),"buildTool");
+        String moduleCIjob = SetRequiredVars(System.getenv("buildJobName"),"buildJobName");
+        String buildURL = SetRequiredVars(System.getenv("buildJobUrl"),"buildJobUrl");
+
 
         File artifactsDirectory = new File(args[0]); //directory location is passed by argument
 
@@ -40,14 +55,15 @@ public class CreateAndDeploy {
             throw new IOException(args[0]+" Path cannot be read, perhaps it does not exist, not a directory of there are not enough permissions to read it");
         }
 
-        ArtifactoryBuildInfoClient client = new ArtifactoryBuildInfoClient(artifactoryURL, "admin", "password", new CreateAndDeploy.MyLog());
+        ArtifactoryBuildInfoClient client = new ArtifactoryBuildInfoClient(artifactoryURL, artifactoryUser, artifactoryPasswd, new CreateAndDeploy.MyLog());
         BuildInfoBuilder builder = new BuildInfoBuilder(buildName);
         builder.number(buildNumber);
+        builder.url(buildURL);
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat(Build.STARTED_FORMAT);
         builder.started(simpleDateFormat.format(new Date()));
 
         ModuleBuilder moduleBuilder = new ModuleBuilder();
-        moduleBuilder.id("test-module");
+        moduleBuilder.id(moduleCIjob);
         List<File> listOfDirectoryArtifacts = new ArrayList<File>();
         listOfDirectoryArtifacts = getFilesFromDirectoryRecursively(artifactsDirectory.listFiles(), listOfDirectoryArtifacts);
         if (!listOfDirectoryArtifacts.isEmpty()) {
@@ -63,7 +79,7 @@ public class CreateAndDeploy {
             }
         }
         Module module = moduleBuilder.build();
-        Build build = builder.addModule(module).agent(new Agent("Java-example-agent")).build();
+        Build build = builder.addModule(module).agent(new Agent(agentCItool)).build();
         try {
             client.sendBuildInfo(build);
         } catch (IOException e) {
@@ -99,6 +115,18 @@ public class CreateAndDeploy {
         return listOfDirectoryArtifacts;
     }
 
+    public static String SetRequiredVars(String envVar, String envVarKey){
+        try {
+              if (envVar == null || envVar.isEmpty()){
+                 throw new Exception();
+             }
+         } catch (Exception e) {
+              System.err.println("Error: No such " + envVarKey + " environment variable found");
+              e.printStackTrace();
+              System.exit(1);
+           }
+              return envVar;
+    }
 
     public static class MyLog implements Log {
         @Override
